@@ -1,0 +1,65 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdk 35 // Gunakan sintaks baru 'compileSdk' bukan 'compileSdkVersion'
+    
+    defaultConfig {
+        applicationId "com.android.support"
+        minSdkVersion 21
+        targetSdkVersion 35
+        versionCode 1
+        versionName "4.0"
+        
+        // Hapus baris buildToolsVersion jika error, 
+        // karena plugin AGP 8.6.1 otomatis memilih versi default yang tepat.
+        buildToolsVersion "35.0.0" 
+
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+        
+        // BAGIAN INI DIPERBAIKI:
+        externalNativeBuild {
+            ndkBuild {
+                // Kosongkan arguments karena NDK r28 sudah pintar.
+                // Settingan C++17 dan Clang sudah dibaca dari Application.mk kamu.
+                // Jika ingin memaksa target tertentu:
+                targets "NxMod"
+            }
+        }
+    }
+
+    // WAJIB: Masukkan path NDK kamu yang terinstal
+    ndkVersion "28.2.13676358"
+
+    buildTypes {
+        release {
+            shrinkResources true
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            shrinkResources false
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    externalNativeBuild {
+        ndkBuild {
+            path file('src/main/jni/Android.mk')
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+    
+    namespace 'com.android.support'
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    // Tambahkan appcompat agar resource sistem terbaca dengan baik
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+}
