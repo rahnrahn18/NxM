@@ -132,8 +132,16 @@ void hack_thread() {
     }
 
     // Init BNM
-    BNM::Loading::TryLoadBundle();
-    NativeLog(OBFUSCATE("[BNM] Engine Loaded. Resolving Symbols..."));
+    // Since we are in a separate thread and il2cpp is already loaded (checked loop above)
+    // We can use dlopen handle or just try load by JNI if we had env, but here we don't have env easily.
+    // However, since we know libil2cpp.so is loaded, we can get handle via dlopen and pass it.
+    void* handle = dlopen("libil2cpp.so", RTLD_LAZY);
+    if (handle) {
+        BNM::Loading::TryLoadByDlfcnHandle(handle);
+        NativeLog(OBFUSCATE("[BNM] Engine Loaded. Resolving Symbols..."));
+    } else {
+        NativeLog(OBFUSCATE("[BNM] Failed to get handle!"));
+    }
 
     do {
         sleep(1);
@@ -153,8 +161,9 @@ void hack_thread() {
     // DYNAMIC RESOLUTION (BNM) - Proof of Concept
     // -------------------------------------------------------------------------
     // Example: Hook UnityEngine.Time.get_timeScale
-    BNM::Method<float> get_timeScale = BNM::Class(OBFUSCATE("UnityEngine"), OBFUSCATE("Time")).GetMethod(OBFUSCATE("get_timeScale"));
-    if (get_timeScale) {
+    // Fix: Cast OBFUSCATE return to const char* explicitly for std::string_view conversion
+    BNM::Method<float> get_timeScale = BNM::Class((const char*)OBFUSCATE("UnityEngine"), (const char*)OBFUSCATE("Time")).GetMethod((const char*)OBFUSCATE("get_timeScale"));
+    if (get_timeScale.IsValid()) {
         NativeLog(OBFUSCATE("[SCAN] Found UnityEngine.Time::get_timeScale"));
     } else {
         NativeLog(OBFUSCATE("[SCAN] Searching for Game Logic..."));

@@ -121,7 +121,6 @@ inline void Unhook(PTR_T ptr) {
 
 
 // Dobby
-/*
 #include <dobby.h>
 
 template<typename PTR_T, typename NEW_T, typename T_OLD>
@@ -139,29 +138,6 @@ inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &&oldBytes) {
 template<typename PTR_T>
 inline void Unhook(PTR_T ptr) {
     if ((void *) ptr != nullptr) DobbyDestroy((void *)ptr);
-}
-*/
-
-// Dummy
-#include <cassert>
-
-static_assert(false, "No hooking software!");
-
-template<typename PTR_T, typename NEW_T, typename T_OLD>
-inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &oldBytes) {
-    if ((void *) ptr != nullptr) ((void)0);
-    return nullptr;
-}
-
-template<typename PTR_T, typename NEW_T, typename T_OLD>
-inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &&oldBytes) {
-    if ((void *) ptr != nullptr) ((void)0);
-    return nullptr;
-}
-
-template<typename PTR_T>
-inline void Unhook(PTR_T ptr) {
-    if ((void *) ptr != nullptr) ((void)0);
 }
 
 #include <dlfcn.h>
