@@ -112,6 +112,10 @@ public class Menu {
     Context getContext;
     Vibrator vibrator;
 
+    public Context getContext() {
+        return getContext;
+    }
+
     // Existing fields for compatibility
     LinearLayout mCollapse;
     int CollapseColor = Color.parseColor("#22FFFFFF");
@@ -910,6 +914,12 @@ public class Menu {
                 }
             }
         };
+    }
+
+    public void setVisibility(int view) {
+        if (rootFrame != null) {
+            rootFrame.setVisibility(view);
+        }
     }
 
     public void onDestroy() {
