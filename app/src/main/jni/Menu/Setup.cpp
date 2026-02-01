@@ -72,10 +72,18 @@ int RegisterMain(JNIEnv *env) {
 extern "C"
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
+    g_jvm = vm; // Save JavaVM
     JNIEnv *env;
     vm->GetEnv((void **) &env, JNI_VERSION_1_6);
     if (RegisterMenu(env) != 0)
         return JNI_ERR;
+
+    // Cache Menu class and Log method
+    jclass clazz = env->FindClass(OBFUSCATE("com/android/support/Menu"));
+    if (clazz) {
+        g_menuClass = (jclass)env->NewGlobalRef(clazz);
+        g_nativeLogMethod = env->GetStaticMethodID(g_menuClass, OBFUSCATE("nativeLog"), OBFUSCATE("(Ljava/lang/String;)V"));
+    }
     if (RegisterPreferences(env) != 0)
         return JNI_ERR;
     if (RegisterMain(env) != 0)

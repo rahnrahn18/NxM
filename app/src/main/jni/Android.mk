@@ -46,16 +46,19 @@ LOCAL_SRC_FILES := \
 LOCAL_C_INCLUDES += $(LOCAL_PATH)
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/Includes
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/Dobby
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/BNM/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/BNM/external/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/BNM/external/utf8
 
 # --- Compiler Flags (Optimized for NDK r28) ---
 # C Flags (untuk file .c)
 LOCAL_CFLAGS := -O3 -fvisibility=hidden -Wall -Wextra -Wno-unused-parameter
 
 # C++ Flags (untuk file .cpp)
-# -std=c++17: Standar modern yang didukung baik oleh NDK r28
+# -std=c++20: Standar modern yang didukung baik oleh NDK r28 (Required for BNM)
 # -fpermissive: Wajib ada jika source code Substrate/And64 kamu code lama
 # -Wno-*: Mematikan warning rewel dari Clang agar tidak dianggap error
-LOCAL_CPPFLAGS := -std=c++17 -O3 -fvisibility=hidden \
+LOCAL_CPPFLAGS := -std=c++20 -O3 -fvisibility=hidden \
     -fpermissive -fexceptions -frtti \
     -Wno-error=format-security \
     -Wno-error=c++11-narrowing \
@@ -71,6 +74,11 @@ LOCAL_LDFLAGS += -Wl,--gc-sections,--strip-all
 LOCAL_LDLIBS := -llog -landroid -lEGL -lGLESv2
 
 # --- Static Libraries Links ---
-LOCAL_STATIC_LIBRARIES := Keystone Dobby
+LOCAL_STATIC_LIBRARIES := Keystone Dobby BNM
 
 include $(BUILD_SHARED_LIBRARY)
+
+# --------------------------------------------------------
+# 3. Include BNM Subproject
+# --------------------------------------------------------
+include $(LOCAL_PATH)/BNM/Android.mk

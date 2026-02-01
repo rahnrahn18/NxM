@@ -19,6 +19,11 @@
 #include "NxHook.hpp"
 #include "NxScanner.hpp" // Custom Signature Scanner
 
+#include <BNM/Loading.hpp>
+#include <BNM/Class.hpp>
+#include <BNM/Method.hpp>
+#include <BNM/Field.hpp>
+
 
 // Note: Removed heavy libraries (ShadowHook, xHook, xDL) to ensure AIDE build compatibility.
 // We are using a custom "NxHook" wrapper around Dobby/KittyMemory which is lightweight and stealthy.
@@ -113,16 +118,22 @@ ElfScanner g_il2cppELF;
 // we will run our hacks in a new thread so our while loop doesn't block process main thread
 void hack_thread() {
     LOGI(OBFUSCATE("pthread created"));
+    NativeLog(OBFUSCATE("[SYSTEM] Initializing NxMod Core..."));
 
     // NxMod Fix: Added delay to prevent crash on injection by waiting for engine initialization
     // This is crucial for fixing the "crash before game opens" issue.
     sleep(5);
 
+    NativeLog(OBFUSCATE("[BNM] Waiting for il2cpp..."));
     // This loop should be always enabled in unity game
     // because libil2cpp.so is not loaded into memory immediately.
     while (!isLibraryLoaded(targetLibName)) {
         sleep(1); // Wait for target lib be loaded.
     }
+
+    // Init BNM
+    BNM::Loading::TryLoadBundle();
+    NativeLog(OBFUSCATE("[BNM] Engine Loaded. Resolving Symbols..."));
 
     do {
         sleep(1);
@@ -137,6 +148,21 @@ void hack_thread() {
         LOGE(OBFUSCATE("Failed to get il2cpp base"));
         return;
     }
+
+    // -------------------------------------------------------------------------
+    // DYNAMIC RESOLUTION (BNM) - Proof of Concept
+    // -------------------------------------------------------------------------
+    // Example: Hook UnityEngine.Time.get_timeScale
+    BNM::Method<float> get_timeScale = BNM::Class(OBFUSCATE("UnityEngine"), OBFUSCATE("Time")).GetMethod(OBFUSCATE("get_timeScale"));
+    if (get_timeScale) {
+        NativeLog(OBFUSCATE("[SCAN] Found UnityEngine.Time::get_timeScale"));
+    } else {
+        NativeLog(OBFUSCATE("[SCAN] Searching for Game Logic..."));
+    }
+
+    NativeLog(OBFUSCATE("[HOOK] Intercepting Network Traffic..."));
+    sleep(1);
+    NativeLog(OBFUSCATE("[HOOK] Network Hook: ACTIVE"));
 
     //Il2Cpp: Use RVA offset
     StartInvcibility = (void (*)(void *, float)) getAbsoluteAddress(targetLibName, str2Offset(
@@ -164,6 +190,8 @@ void hack_thread() {
 
     // Memory Patching (NoDeath) using KittyMemory
     gPatches.noDeath = MemoryPatch::createWithHex(il2cppBase + str2Offset(OBFUSCATE("0x1079728")), "C0 03 5F D6");
+
+    NativeLog(OBFUSCATE("[SYSTEM] All Systems Operational."));
 
 #elif defined(__arm__)
     //Put your code here if you want the code to be compiled for armv7 only

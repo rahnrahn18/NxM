@@ -11,6 +11,12 @@
 
 typedef unsigned long DWORD;
 
+extern JavaVM *g_jvm;
+extern jclass g_menuClass;
+extern jmethodID g_nativeLogMethod;
+
+void NativeLog(const std::string& msg);
+
 DWORD findLibrary(const char *library);
 
 DWORD getAbsoluteAddress(const char *libraryName, DWORD relativeAddr);

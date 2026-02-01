@@ -1,6 +1,29 @@
 #include "Utils.hpp"
 #include "obfuscate.h"
 
+JavaVM *g_jvm = nullptr;
+jclass g_menuClass = nullptr;
+jmethodID g_nativeLogMethod = nullptr;
+
+void NativeLog(const std::string& msg) {
+    if (!g_jvm) return;
+    JNIEnv* env;
+    int getEnvStat = g_jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
+    bool attached = false;
+    if (getEnvStat == JNI_EDETACHED) {
+        if (g_jvm->AttachCurrentThread(&env, nullptr) != 0) return;
+        attached = true;
+    }
+
+    if (g_menuClass && g_nativeLogMethod) {
+         jstring jMsg = env->NewStringUTF(msg.c_str());
+         env->CallStaticVoidMethod(g_menuClass, g_nativeLogMethod, jMsg);
+         env->DeleteLocalRef(jMsg);
+    }
+
+    if (attached) g_jvm->DetachCurrentThread();
+}
+
 static uintptr_t libBase;
 
 bool libLoaded = false;
