@@ -6,14 +6,17 @@
 #include <jni.h>
 
 void Init(JNIEnv *env, jobject thiz, jobject ctx, jobject title, jobject subtitle) {
-    //Set sub title
-    setText(env, title, OBFUSCATE("<b>NxMod Menu</b>"));
+    // Check if title/subtitle are provided before setting text
+    if (title != nullptr) {
+        setText(env, title, OBFUSCATE("<b>NxMod Menu</b>"));
+    }
 
-    //Set sub title
-    setText(env, subtitle, OBFUSCATE("<b><marquee><p style=\"font-size:30\">"
-                                     "<p style=\"color:green;\">Powered by NxMod Engine</p> | "
-                                     "Premium Android Modding Solution</p>"
-                                     "</marquee></b>"));
+    if (subtitle != nullptr) {
+        setText(env, subtitle, OBFUSCATE("<b><marquee><p style=\"font-size:30\">"
+                                         "<p style=\"color:green;\">Powered by NxMod Engine</p> | "
+                                         "Premium Android Modding Solution</p>"
+                                         "</marquee></b>"));
+    }
     
     // Welcome Toast
     Toast(env, ctx, OBFUSCATE("NxMod Injected Successfully"), ToastLength::LENGTH_LONG);
