@@ -1,111 +1,104 @@
-Berikut adalah dokumentasi teknis arsitektur untuk integrasi alat modding dan pengembangan visualisasi real-time pada proyek NxMod.
-Dokumentasi ini disusun berdasarkan pedoman Enviroment pengguna.
-‎***
-‎[All Enviroment & tools Installed in my Enviroment]
-‎
-‎IDE & ENV
-‎IDE : Android Code Studio / AndroidIDE (AndroidCSOfficial v1.0.0+gh.r3)
-‎Platform : Android (on-device)
-‎Device ABI : arm64-v8a
-‎Java Runtime (JDK): OpenJDK 17.0.16
-‎Gradle Wrapper 8.13-bin.zip
-‎
-‎Core Tools:
-‎  - Cmdline-Tools: 20.0 (latest)
-‎  - Platform-Tools: 34.0.4 (adb, fastboot)
-‎  - Patcher: v4
-‎Build Configuration:
-‎  - Build-Tools Versions: 
-‎    - 35.0.0
-‎- Kotlin 2.1.0
-‎    compileSdk 35
-‎    buildToolsVersion "35.0.0" // wajib
-‎    ndkVersion "28.2.13676358" // wajib
-‎      - CMake Version: 4.1.1 (wajib)
-‎  - Build System: Ninja (Implicitly supported by CMake suite)
-‎
-‎---
-‎Penting !
-‎location android-sdk in my enviroment: "/data/user/0/com.tom.rv2ide/files/home/android-sdk/"
-‎Karena CompileSdk 35 (Android 15) dan Build-Tools 35.0.0, pastikan di file build.gradle (Project Level) atau libs.versions.toml, versi Plugin Android kamu minimal 8.4.0 atau lebih baru (8.5/8.6 recommended).
-‎---
-‎***
+# Panduan Lengkap NxMod: Modding Universal Unity (Android)
 
-Dokumentasi Arsitektur Teknis: Integrasi NxMod & Visualisasi Realtime
-Proyek: NxMod (Base LGLTeam)
-Environment: Android Native (AndroidIDE), ARM64
-Status Saat Ini: Build Stable, dobby.h, libdobby.a, And64InlineHook, KittyMemory, Substrate, Inclue: looger.h, Macros.h, Utils.cpp, get_device_api_level_inlines.h, obfusecate.h, keystone.a dan masih banyak lagi telah Integrated.✅
+## 1. Pendahuluan
+NxMod telah direvamp menjadi alat modding "Super Power" dengan antarmuka Cyberpunk dan integrasi mesin BNM (ByNameModding) untuk kompatibilitas universal terhadap game Unity (Il2Cpp).
 
-- Untuk mengintegrasikan pemantauan jaringan PCAPdroid ke dalam proyek NxMod. remote_capture ini relevan untuk membuat jembatan JNI guna menangani data yang diterima dari mesin asli. 
+### Fitur Utama
+*   **Universal Unity Support:** Mendeteksi `libil2cpp.so` secara otomatis.
+*   **Hacker UI:** Tampilan modern dengan Real-time Console Log.
+*   **BNM Engine:** Tidak perlu update offset manual setiap game update (Dynamic Resolution).
+*   **Safe Mode:** Deteksi otomatis jika engine gagal load.
 
-1. Konsep Dasar Integrasi Sistem
-Tujuan utama pembaruan ini adalah mengubah metode modding dari Static Offset menjadi Dynamic Resolution dan menambahkan lapisan keamanan data server, serta antarmuka visualisasi aktivitas sistem (Hacker Log Console).
-Alur kerja sistem baru ini menggabungkan tiga komponen utama dari referensi yang diberikan:
- * Core Logic (C++): Tempat logika permainan dan hooking.
- * Resolution Engine (BNM): Alat pemindaian memori berbasis nama untuk otomatisasi offset.
- * Validation Engine (Hash-Library): Alat manipulasi checksum untuk validasi server.
- * UI Bridge (JNI): Jembatan pengirim data status ke tampilan visual pengguna.
-2. Modul Resolusi Memori Dinamis (Integrasi BNM)
-Mengacu pada referensi alat BNM-Android (ByNameModding), modul ini berfungsi sebagai "otak pencari" yang menggantikan pencarian manual.
-Logika Koneksi & Alur Kerja:
- * Inisialisasi Runtime: Saat library dimuat, BNM tidak menggunakan alamat memori statis (hex). Ia bekerja dengan memindai struktur internal game saat game berjalan.
- * Pencarian Berbasis Nama:
-   * Sistem NxMod mengirimkan perintah string (misal: cari method get_Money atau class PlayerData) ke modul BNM.
-   * BNM menelusuri memori secara otomatis untuk menemukan lokasi fungsi tersebut. Ini mencegah mod menjadi usang (expired) saat game melakukan update, karena nama fungsi jarang berubah dibandingkan alamat offsetnya.
- * Handover ke tools pendukung yang relevan: Setelah BNM menemukan alamat target, alamat tersebut diserahkan ke salah satu Hooking Framework (yang relevan dan sudah terintegrasi di sistem) untuk melakukan intersepsi atau pembajakan fungsi.
-3. Modul Validasi Server & Integritas Data
-Mengacu pada referensi Hash-Library (Chocobo1) dan XXHash, modul ini berfungsi untuk memanipulasi protokol komunikasi agar modifikasi data dianggap valid oleh server.
-Logika Koneksi & Alur Kerja:
- * Intersepsi Paket: tools yang tersedia digunakan untuk menahan fungsi pengiriman data jaringan (seperti send()) sebelum data meninggalkan perangkat.
- * Modifikasi & Re-Hashing:
-   * Setelah data permainan diubah (misal: currency ditambah), data tersebut menjadi "korup" di mata server karena checksum-nya salah.
-   * Sistem NxMod memanggil Hash-Library untuk menghitung ulang checksum (MD5, SHA-256, atau SHA-3) dari data yang sudah dimodifikasi.
-   * Jika game menggunakan validasi integritas memori yang sangat cepat, modul XXHash digunakan karena kecepatannya yang tinggi.
- * Pengiriman Valid: Paket data yang sudah dimodifikasi dan ditandatangani ulang dengan hash baru dikirim ke server, membuat server menerima data tersebut sebagai data asli.
-4. Sistem Visualisasi Log Realtime (Hacker UI)
-Untuk memenuhi permintaan mengenai visualisasi teks berjalan yang menunjukkan sistem sedang bekerja (hacker style), diperlukan jalur komunikasi antara layer C++ (Native) dan layer Java/Kotlin (UI AndroidIDE).
-Arsitektur Alur Data (Pipeline):
- * Event Trigger (Sumber Data - C++):
-   Setiap kali komponen di atas bekerja, sistem akan memicu sinyal:
-   * Saat BNM menemukan alamat -> Sinyal SCAN_SUCCESS.
-   * Saat Tools yang telah terintergrasi melakukan hook -> Sinyal HOOK_ATTACHED.
-   * Saat Hash-Lib memvalidasi paket -> Sinyal PACKET_SIGNED.
- * JNI Bridge (Jembatan Komunikasi):
-   Karena C++ tidak bisa langsung menggambar ke layar HP, ia menggunakan JNI (Java Native Interface) untuk mengirim pesan string ke lapisan aplikasi.
-   * Fungsi C++ memanggil method Java secara asinkron untuk mengirim log teks status terkini.
- * UI Handler (Kotlin - Tampilan):
-   Di sisi aplikasi NxMod, sebuah listener menerima pesan tersebut dan menampilkannya pada komponen teks gulir (scrolling text view).
-   * Visualisasi: Teks diformat dengan warna (Hijau untuk sukses, Merah untuk error) agar memberikan efek visual "hacking" yang sedang berjalan secara realtime.
-   
-5. Konfigurasi Build System (Environment Integrasi)
-Berdasarkan referensi cara build dan environment AndroidIDE:
- * Penyatuan Source Code:
-   Library BNM dan Hash-Library diintegrasikan langsung ke dalam folder jni proyek NxM. Metode ini disebut Source Inclusion, di mana file .cpp dan .h library tersebut didaftarkan langsung ke dalam variabel LOCAL_SRC_FILES di Android.mk.
- * Kompilasi Tunggal:
-   Dengan konfigurasi ini, saat menekan tombol "Build" di AndroidIDE, seluruh komponen (NxM Core + BNM + Hash-Lib + Main.cpp dan lain-lainnya) akan dikompilasi menjadi satu file apk yang didalamnya terdapat file tunggal (libNxMod.so) yang siap diinjeksi.
-   
- ***
-   
-Ringkasan Topologi NxMod Baru:
- * Start: Game berjalan -> libNxMod.so dimuat.
- * Visual: UI Log muncul: [SYSTEM] Initializing NxMod Core....
- * Scan: BNM bekerja -> Log update: [SCAN] Searching Method: get_Gold... FOUND at 0x7A1....
- * Hook: Cpp bekerja -> Log update: [HOOK] Intercepting Network Traffic... SUCCESS.
- * Action: User mengubah nilai -> Hash-Lib bekerja -> Log update: [NET] Re-calculating Checksum... Validated & Sent.
- 
- ***
- 
- Catatan : 
- 
-1. Izin Memori (Android 15):
-Karena Anda menggunakan CompileSdk 35, Android sekarang sangat ketat terhadap dynamic code loading. Pastikan dalam AndroidManifest.xml Anda tidak melupakan atribut android:extractNativeLibs="true" jika Anda melakukan injeksi manual, atau pastikan library .so berada di lokasi yang tepat agar tidak terkena blokir kebijakan Read-only executable memory.
+---
 
-2. Kesesuaian NDK 28 & CMake 4.1.1:
-Pada NDK versi terbaru, LLVM/Clang adalah compiler default. Pastikan pada file Android.mk atau CMakeLists.txt, Anda menambahkan flag -fvisibility=hidden untuk menyembunyikan simbol fungsi Anda agar tidak mudah di-reverse engineering oleh sistem anti-cheat game.
+## 2. Cara Kerja Sistem
+1.  **Injection:** Saat game dimulai, library `libNxMod.so` dimuat ke memori.
+2.  **Initialization:**
+    *   Thread baru dibuat (`hack_thread`).
+    *   Sistem menunggu `libil2cpp.so` (Library Game Unity) dimuat.
+    *   **BNM Loader** mencoba mengaitkan diri ke engine Unity untuk membaca Class, Method, dan Field secara dinamis.
+3.  **UI Overlay:** Service Java (`Launcher.java`) menampilkan Floating Menu di atas game.
+4.  **Komunikasi:** Native C++ mengirim log aktivitas ke Java UI via JNI (`nativeLog`).
 
-3. Optimalisasi JNI Bridge:
-Untuk Visualisasi Log Realtime, pastikan pemanggilan JNI dari C++ ke Java/Kotlin dilakukan di Background Thread. Jika C++ memanggil UI thread secara langsung (Blocking call), game akan mengalami frame drop atau stuttering. Gunakan AttachCurrentThread dari env JNI dengan hati-hati.
+---
 
-4. XXHash vs Hash-Library:
-XXHash: Sangat baik jika Anda melakukan bypass pada fungsi Update() atau FixedUpdate() yang berjalan 60 kali per detik.
-Hash-Library (SHA-256): Gunakan hanya saat paket data akan dikirim (saat send() terpanggil), karena enkripsi SHA cukup memakan resource CPU jika dijalankan setiap frame.
+## 3. Panduan Inject (PENTING)
+
+Agar mod menu berjalan, Anda harus memuat library `NxMod` ke dalam proses game. Ada beberapa metode injeksi Smali yang bisa digunakan.
+
+### Target: `classes.dex` (Smali)
+
+Buka file APK game menggunakan `APKEditor` atau `MT Manager`, lalu decompile `classes.dex`. Cari lokasi yang tepat untuk menyisipkan kode pemuat.
+
+#### Metode A: `OnCreate` (Rekomendasi - Paling Stabil)
+Cari Activity utama game (biasanya `com.unity3d.player.UnityPlayerActivity` atau lihat di AndroidManifest.xml).
+Cari method `onCreate`. Tambahkan kode ini di baris pertama method:
+
+```smali
+const-string v0, "NxMod"
+invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V
+```
+
+#### Metode B: `attachBaseContext` (Untuk load lebih awal)
+Jika `onCreate` terdeteksi atau terlalu lambat, gunakan `attachBaseContext` di Application Class atau Activity utama.
+
+```smali
+.method protected attachBaseContext(Landroid/content/Context;)V
+    .locals 1
+    invoke-super {p0, p1}, Landroid/app/Activity;->attachBaseContext(Landroid/content/Context;)V
+    const-string v0, "NxMod"
+    invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V
+    return-void
+.end method
+```
+
+#### Metode C: `clinit` (Constructor Statis - Paling Awal)
+Hanya gunakan jika Anda tahu apa yang Anda lakukan. Ini berjalan saat class pertama kali dimuat.
+
+```smali
+.method static constructor <clinit>()V
+    .locals 1
+    const-string v0, "NxMod"
+    invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V
+    return-void
+.end method
+```
+
+---
+
+## 4. Troubleshooting Crash
+
+Jika game Force Close (FC) / Crash setelah injeksi:
+
+### A. Versi Unity Tidak Cocok
+BNM perlu tahu perkiraan versi Unity. Default saat ini adalah **Unity 2020.3.x**.
+Jika game Anda sangat baru (2022+) atau sangat lama (2018), ubah di `app/src/main/jni/BNM/include/BNM/UserSettings/GlobalSettings.hpp`:
+
+```cpp
+// Pilih salah satu yang sesuai:
+// #define UNITY_VER 182 // Unity 2018
+// #define UNITY_VER 194 // Unity 2019
+#define UNITY_VER 203 // Unity 2020 (Default Aman)
+// #define UNITY_VER 222 // Unity 2022
+```
+Setelah diubah, **Rebuild Library**.
+
+### B. Proteksi Game (Anti-Cheat)
+*   **Metadata Check:** Game mungkin mengecek integritas `global-metadata.dat`. NxMod tidak menyentuh file ini, tapi injeksi hook bisa terdeteksi.
+*   **ExtractNativeLibs:** Pastikan di `AndroidManifest.xml` tag `<application>` memiliki atribut:
+    `android:extractNativeLibs="true"`
+    Ini penting agar `libNxMod.so` bisa dibaca path-nya oleh `dlopen`.
+
+### C. Arsitektur Salah
+Pastikan Anda menginjeksi library yang sesuai dengan arsitektur HP/Game.
+*   Game 64-bit (arm64-v8a) -> Pakai `libNxMod.so` folder `arm64-v8a`.
+*   Game 32-bit (armeabi-v7a) -> Pakai `libNxMod.so` folder `armeabi-v7a`.
+Jangan campur aduk!
+
+---
+
+## 5. Build Environment
+Disarankan menggunakan:
+*   AndroidIDE / AIDE
+*   NDK r28 (Support C++20)
+*   Pastikan submodul `BNM` dan `Dobby` ada di folder `jni`.

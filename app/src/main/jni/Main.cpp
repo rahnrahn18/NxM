@@ -131,16 +131,18 @@ void hack_thread() {
         sleep(1); // Wait for target lib be loaded.
     }
 
-    // Init BNM
-    // Since we are in a separate thread and il2cpp is already loaded (checked loop above)
-    // We can use dlopen handle or just try load by JNI if we had env, but here we don't have env easily.
-    // However, since we know libil2cpp.so is loaded, we can get handle via dlopen and pass it.
+    // Init BNM - Universal approach
+    // First try JNI if available (requires passing JNIEnv down), or Dlfcn handle.
+    // Since we are in a pure C++ thread without JNIEnv attached yet, getting handle is safest.
     void* handle = dlopen("libil2cpp.so", RTLD_LAZY);
     if (handle) {
-        BNM::Loading::TryLoadByDlfcnHandle(handle);
-        NativeLog(OBFUSCATE("[BNM] Engine Loaded. Resolving Symbols..."));
+        if (BNM::Loading::TryLoadByDlfcnHandle(handle)) {
+             NativeLog(OBFUSCATE("[BNM] Engine Loaded Successfully."));
+        } else {
+             NativeLog(OBFUSCATE("[BNM] Failed to initialize BNM hooks. Version mismatch?"));
+        }
     } else {
-        NativeLog(OBFUSCATE("[BNM] Failed to get handle!"));
+        NativeLog(OBFUSCATE("[BNM] Failed to get libil2cpp.so handle!"));
     }
 
     do {
@@ -211,6 +213,7 @@ void hack_thread() {
 
 __attribute__((constructor))
 void lib_main() {
+    // Create a new thread to run the hack loop so we don't block the main thread
     std::thread(hack_thread).detach();
 }
 
