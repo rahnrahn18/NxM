@@ -20,9 +20,14 @@ static_assert(false, "ByNameModding requires C++20 and above!");
 //#define UNITY_VER 212 // 2021.2.x
 //#define UNITY_VER 213 // 2021.3.x
 //#define UNITY_VER 221 // 2022.1.x
-#define UNITY_VER 222 // 2022.2.x - 2022.3.x
-//#define UNITY_VER 231 // 2023.1.x
-//#define UNITY_VER 232 // 2023.2.x+
+// #define UNITY_VER 222 // 2022.2.x - 2022.3.x
+// #define UNITY_VER 231 // 2023.1.x
+// #define UNITY_VER 232 // 2023.2.x+
+
+// Universal Config:
+// If you don't know the Unity version, 2020.3.x (203) is a safe bet for many popular games.
+// Uncomment the one that matches your target game best.
+#define UNITY_VER 203
 
 #define UNITY_PATCH_VER 32 // Для особых случаев (For special cases)
 
@@ -121,7 +126,6 @@ inline void Unhook(PTR_T ptr) {
 
 
 // Dobby
-/*
 #include <dobby.h>
 
 template<typename PTR_T, typename NEW_T, typename T_OLD>
@@ -139,29 +143,6 @@ inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &&oldBytes) {
 template<typename PTR_T>
 inline void Unhook(PTR_T ptr) {
     if ((void *) ptr != nullptr) DobbyDestroy((void *)ptr);
-}
-*/
-
-// Dummy
-#include <cassert>
-
-static_assert(false, "No hooking software!");
-
-template<typename PTR_T, typename NEW_T, typename T_OLD>
-inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &oldBytes) {
-    if ((void *) ptr != nullptr) ((void)0);
-    return nullptr;
-}
-
-template<typename PTR_T, typename NEW_T, typename T_OLD>
-inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &&oldBytes) {
-    if ((void *) ptr != nullptr) ((void)0);
-    return nullptr;
-}
-
-template<typename PTR_T>
-inline void Unhook(PTR_T ptr) {
-    if ((void *) ptr != nullptr) ((void)0);
 }
 
 #include <dlfcn.h>
